@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">MindControlledHomeAutomation</string>
+    <string name="app_name">Mindful Home Automation</string>
+    <string name="IP_ADDRESS">pi_ip</string>
 </resources>

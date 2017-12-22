@@ -1,9 +1,15 @@
 package lazerade.com.mindcontrolledhomeautomation;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -18,7 +24,6 @@ import com.neurosky.connection.DataType.MindDataType;
 import com.neurosky.connection.TgStreamHandler;
 import com.neurosky.connection.TgStreamReader;
 
-
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "Mindful";
     private NskAlgoSdk nskAlgoSdk;
@@ -26,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
     private String connectionState;
     private int seekState;
+    private static final int SEEK_BAR_INTIAL_STATE = 75;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         nskAlgoSdk = new NskAlgoSdk();
-        Button headSet = (Button) findViewById(R.id.headSet);
+        Button headSet = findViewById(R.id.headSet);
         try {
             // (1) Make sure that the device supports Bluetooth and Bluetooth is on
             mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -42,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
                         this,
                         "Please enable your Bluetooth and re-run this program !",
                         Toast.LENGTH_LONG).show();
-                //finish();
             } else {
                 headSet.setVisibility(View.VISIBLE);
             }
@@ -56,20 +62,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Example of constructor public TgStreamReader(BluetoothAdapter ba, TgStreamHandler tgStreamHandler)
-                tgStreamReader = new TgStreamReader(mBluetoothAdapter,callback);
+                tgStreamReader = new TgStreamReader(mBluetoothAdapter, callback);
 
-                if(tgStreamReader != null && tgStreamReader.isBTConnected()){
-
-                    // Prepare for connecting
+                if (tgStreamReader != null && tgStreamReader.isBTConnected()) {
                     tgStreamReader.stop();
                     tgStreamReader.close();
                 }
-
                 tgStreamReader.connect();
             }
         });
 
+        // Set up seek bar that is the threshold for Attention
         SeekBar sBar = findViewById(R.id.settingBar);
+        sBar.setProgress(SEEK_BAR_INTIAL_STATE);
+        seekState = SEEK_BAR_INTIAL_STATE;
         sBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -84,10 +90,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
-         });
+        });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.settings:
+                Intent intent = new Intent(this, Settings.class);
+                startActivity(intent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 
     private TgStreamHandler callback = new TgStreamHandler() {
-
         @Override
         public void onStatesChanged(int connectionStates) {
             Log.d(TAG, "connectionStates change to: " + connectionStates);
@@ -124,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
             }
 
+            // Update status text field
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -156,6 +182,13 @@ public class MainActivity extends AppCompatActivity {
                     pBar.setProgress(attValue[0]);
                     if (attValue[0] >= seekState) {
                         Log.d(TAG, "Concentrated hard enough");
+                        SocketClient client;
+                        String ipAddr;
+                        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+                        ipAddr = prefs.getString(getString(R.string.IP_ADDRESS), "0.0.0.0");
+                        client = new SocketClient(ipAddr);
+                        client.sendString("TEST");
                     }
                     break;
                 case MindDataType.CODE_MEDITATION:
