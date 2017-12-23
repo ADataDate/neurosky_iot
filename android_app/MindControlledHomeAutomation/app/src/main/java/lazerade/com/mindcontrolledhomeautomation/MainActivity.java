@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private String connectionState;
     private int seekState;
     private static final int SEEK_BAR_INTIAL_STATE = 75;
-
+    private long lastSwitch = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -180,7 +180,9 @@ public class MainActivity extends AppCompatActivity {
                     nskAlgoSdk.NskAlgoDataStream(NskAlgoDataType.NSK_ALGO_DATA_TYPE_ATT.value, attValue, 1);
                     Log.d(TAG, "attValue: " + attValue[0]);
                     pBar.setProgress(attValue[0]);
-                    if (attValue[0] >= seekState) {
+                    long curTime = System.currentTimeMillis();
+                    if (attValue[0] >= seekState && curTime - lastSwitch > 10000) {
+                        lastSwitch = curTime;
                         Log.d(TAG, "Concentrated hard enough");
                         SocketClient client;
                         String ipAddr;
