@@ -10,12 +10,12 @@ import java.net.Socket;
 
 public class SocketClient {
     private String mAddress;
-
+    private static final String DATA = "switch";
     public SocketClient(String address) {
         mAddress = address;
     }
 
-    public boolean sendString(String data) {
+    public boolean sendSwitch() {
         boolean status = false;
         Thread send = new Thread(new Runnable() {
             @Override
@@ -29,7 +29,7 @@ public class SocketClient {
                     s.connect(socketAddress);
                     Log.d(MainActivity.TAG, "Connected");
                     BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-                    bw.write("test\n");
+                    bw.write(DATA);
                     bw.flush();
                     s.close();
                 } catch (Exception e) {

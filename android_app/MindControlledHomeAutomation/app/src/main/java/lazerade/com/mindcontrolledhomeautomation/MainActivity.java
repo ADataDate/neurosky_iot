@@ -34,13 +34,53 @@ public class MainActivity extends AppCompatActivity {
     private static final int SEEK_BAR_INTIAL_STATE = 75;
     private long lastSwitch = 0;
 
+    /**
+     * Initialize blue tooth, headset button, and the seek bar
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         nskAlgoSdk = new NskAlgoSdk();
-        Button headSet = findViewById(R.id.headSet);
+        setupBlueTooth();
+        setupHeadSetButton();
+        setupSeekBar();
+    }
+
+    /**
+     * Create the options menu for the IP address
+     * @param menu
+     * @return
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    /**
+     * Start the settings activity
+     * @param item
+     * @return
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.settings:
+                Intent intent = new Intent(this, Settings.class);
+                startActivity(intent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    /**
+     * Set up the bluetooth
+     */
+    private void setupBlueTooth() {
         try {
             // (1) Make sure that the device supports Bluetooth and Bluetooth is on
             mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -49,14 +89,19 @@ public class MainActivity extends AppCompatActivity {
                         this,
                         "Please enable your Bluetooth and re-run this program !",
                         Toast.LENGTH_LONG).show();
-            } else {
-                headSet.setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG, "error:" + e.getMessage());
             return;
         }
+    }
+
+    /**
+     * Set up the head set button
+     */
+    private void setupHeadSetButton() {
+        Button headSet = findViewById(R.id.headSet);
 
         headSet.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -71,9 +116,15 @@ public class MainActivity extends AppCompatActivity {
                 tgStreamReader.connect();
             }
         });
+    }
+
+    /**
+     * Set up the seek bar
+     */
+    private void setupSeekBar() {
+        SeekBar sBar = findViewById(R.id.settingBar);
 
         // Set up seek bar that is the threshold for Attention
-        SeekBar sBar = findViewById(R.id.settingBar);
         sBar.setProgress(SEEK_BAR_INTIAL_STATE);
         seekState = SEEK_BAR_INTIAL_STATE;
         sBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -93,26 +144,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.settings:
-                Intent intent = new Intent(this, Settings.class);
-                startActivity(intent);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
+    /**
+     * Stream handler callback
+     */
     private TgStreamHandler callback = new TgStreamHandler() {
+        private SocketClient client;
+        private SharedPreferences prefs;
+        private static final int TIMEOUT = 10000;
+
+        /**
+         * Set the connection state string and display to UI
+         * @param connectionStates
+         */
         @Override
         public void onStatesChanged(int connectionStates) {
             Log.d(TAG, "connectionStates change to: " + connectionStates);
@@ -159,18 +202,32 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        /**
+         * Do nothing on a record fail
+         * @param flag
+         */
         @Override
         public void onRecordFail(int flag) {
-            // You can handle the record error message here
-            Log.e(TAG,"onRecordFail: " +flag);
 
         }
 
+        /**
+         * Do nothing on a checksum fail
+         * @param payload
+         * @param length
+         * @param checksum
+         */
         @Override
         public void onChecksumFail(byte[] payload, int length, int checksum) {
-            // You can handle the bad packets here.
+
         }
 
+        /**
+         * Handle received data, send a switch command over the socket if criteria are met
+         * @param datatype
+         * @param data
+         * @param obj
+         */
         @Override
         public void onDataReceived(int datatype, int data, Object obj) {
             ProgressBar pBar = (ProgressBar) findViewById(R.id.progressBar);
@@ -181,16 +238,11 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "attValue: " + attValue[0]);
                     pBar.setProgress(attValue[0]);
                     long curTime = System.currentTimeMillis();
-                    if (attValue[0] >= seekState && curTime - lastSwitch > 10000) {
+                    if (attValue[0] >= seekState && curTime - lastSwitch > TIMEOUT) {
                         lastSwitch = curTime;
-                        Log.d(TAG, "Concentrated hard enough");
-                        SocketClient client;
-                        String ipAddr;
-                        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
-                        ipAddr = prefs.getString(getString(R.string.IP_ADDRESS), "0.0.0.0");
-                        client = new SocketClient(ipAddr);
-                        client.sendString("TEST");
+                        prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+                        client = new SocketClient(prefs.getString(getString(R.string.IP_ADDRESS), ""));
+                        client.sendSwitch();
                     }
                     break;
                 case MindDataType.CODE_MEDITATION:
