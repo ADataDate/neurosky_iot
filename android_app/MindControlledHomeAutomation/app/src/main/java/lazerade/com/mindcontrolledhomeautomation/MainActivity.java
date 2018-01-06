@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
     private String connectionState;
     private int seekState;
-    private static final int SEEK_BAR_INTIAL_STATE = 75;
+    private static final int SEEK_BAR_INITIAL_STATE = 75;
     private long lastSwitch = 0;
 
     /**
@@ -149,8 +149,8 @@ public class MainActivity extends AppCompatActivity {
         SeekBar sBar = findViewById(R.id.settingBar);
 
         // Set up seek bar that is the threshold for Attention
-        sBar.setProgress(SEEK_BAR_INTIAL_STATE);
-        seekState = SEEK_BAR_INTIAL_STATE;
+        sBar.setProgress(SEEK_BAR_INITIAL_STATE);
+        seekState = SEEK_BAR_INITIAL_STATE;
         sBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
