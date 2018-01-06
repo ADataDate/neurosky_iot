@@ -3,6 +3,7 @@ package lazerade.com.mindcontrolledhomeautomation;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -24,6 +25,8 @@ import com.neurosky.connection.DataType.MindDataType;
 import com.neurosky.connection.TgStreamHandler;
 import com.neurosky.connection.TgStreamReader;
 
+import java.net.Socket;
+
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "Mindful";
     private NskAlgoSdk nskAlgoSdk;
@@ -44,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         nskAlgoSdk = new NskAlgoSdk();
         setupBlueTooth();
+        setupRPiButton();
         setupHeadSetButton();
         setupSeekBar();
     }
@@ -118,6 +122,26 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private SocketClient createClient() {
+        SharedPreferences prefs;
+        prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        SocketClient client = new SocketClient(prefs.getString(getString(R.string.IP_ADDRESS), "0.0.0.0"));
+        return client;
+    }
+    /**
+     * Set up the rPi button
+     */
+    private void setupRPiButton() {
+        Button rPiButton = findViewById(R.id.rPiButton);
+
+        rPiButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new SendCheck().execute();
+            }
+        });
+    }
+
     /**
      * Set up the seek bar
      */
@@ -148,8 +172,6 @@ public class MainActivity extends AppCompatActivity {
      * Stream handler callback
      */
     private TgStreamHandler callback = new TgStreamHandler() {
-        private SocketClient client;
-        private SharedPreferences prefs;
         private static final int TIMEOUT = 10000;
 
         /**
@@ -240,9 +262,7 @@ public class MainActivity extends AppCompatActivity {
                     long curTime = System.currentTimeMillis();
                     if (attValue[0] >= seekState && curTime - lastSwitch > TIMEOUT) {
                         lastSwitch = curTime;
-                        prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-                        client = new SocketClient(prefs.getString(getString(R.string.IP_ADDRESS), ""));
-                        client.sendSwitch();
+                        new SendSwitch().execute();
                     }
                     break;
                 case MindDataType.CODE_MEDITATION:
@@ -260,4 +280,61 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    /**
+     * Creates a socket connection and sends a command
+     * @param command command to send
+     * @return status of sending the command
+     */
+    private boolean sendCommand(String command) {
+        boolean status = false;
+        SocketClient client = createClient();
+
+        try {
+            Socket s = client.connect();
+            if (client.sendRequest(s, command)) {
+                status = client.recvResponse(s);
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Could not send data: " + command);
+        }
+        return status;
+    }
+
+    /**
+     * AsyncTask to send the switch command to the raspberry pi and show a toast showing result
+     */
+    private class SendSwitch extends AsyncTask<String, Boolean, Boolean> {
+        protected Boolean doInBackground(String... args) {
+            return sendCommand(SocketClient.SWITCH);
+        }
+
+        protected void onPostExecute(Boolean result) {
+            Toast toast;
+            String toastString = "Switch command unsuccessful";
+            if (result) {
+                toastString = "Switch command successful";
+            }
+            toast = Toast.makeText(getApplicationContext(), toastString, Toast.LENGTH_LONG);
+            toast.show();
+        }
+    }
+
+    /**
+     * AsyncTask to check on the raspberry pi and update the TextView
+     */
+    private class SendCheck extends AsyncTask<String, Boolean, Boolean> {
+        protected Boolean doInBackground(String... args) {
+            return sendCommand(SocketClient.CHECK);
+        }
+
+        protected void onPostExecute(Boolean result) {
+            TextView rPiConnect = findViewById(R.id.rPiConnection);
+            String status = "Disconnected";
+            if (result) {
+                status = "Connected";
+            }
+            rPiConnect.setText(status);
+        }
+    }
 }

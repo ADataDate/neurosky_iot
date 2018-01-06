@@ -7,6 +7,15 @@
     tools:context="lazerade.com.mindcontrolledhomeautomation.MainActivity">
 
     <Button
+        android:id="@+id/headSet2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Attach Head Set"
+        android:visibility="visible"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="16dp" />
+
+    <Button
         android:id="@+id/headSet"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -20,8 +29,9 @@
         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:layout_width="341dp"
         android:layout_height="19dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.511"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/attentionLevel" />
 
@@ -34,9 +44,8 @@
         android:text="Attention Level"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/headSet" />
+        app:layout_constraintTop_toBottomOf="@+id/rPiButton" />
 
     <TextView
         android:id="@+id/connectionStatus"
@@ -62,7 +71,7 @@
         android:text="Attention Setting"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.502"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progressBar" />
 
@@ -72,8 +81,34 @@
         android:layout_height="17dp"
         android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/attentSetting" />
+
+    <Button
+        android:id="@+id/rPiButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Connect to RPi   "
+        app:layout_constraintEnd_toEndOf="@+id/headSet2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/headSet2" />
+
+    <TextView
+        android:id="@+id/rPiConnection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Disconnected"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="@+id/rPiButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/rPiButton"
+        app:layout_constraintTop_toTopOf="@+id/rPiButton" />
 
 </android.support.constraint.ConstraintLayout>
