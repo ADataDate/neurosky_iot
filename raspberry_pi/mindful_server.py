@@ -7,6 +7,10 @@ import RPi.GPIO as GPIO
 
 PORT = 12345
 LED_PIN = 23
+GOOD_RESPONSE = "ok"
+BAD_RESPONSE  = "no"
+SWITCH_CMD = "switch"
+CSTATE_CMD = "cstate"
 
 if __name__ == "__main__":
     # Set logging format
@@ -25,19 +29,31 @@ if __name__ == "__main__":
     s_sock.listen(5)
 
     current_state = 0
+    GPIO.output(LED_PIN, GPIO.LOW if not current_state else GPIO.HIGH)
+
     while True:
         try:
             # Accept incoming socket connections
             log.info("Accepting incoming socket connections")
             (c_sock, add) = s_sock.accept()
             log.info("Accepted socket connection from address: {}".format(add))
-            data = c_sock.recv(5)
+            data = c_sock.recv(6)
             log.info("Received: {}".format(data))
-            current_state = ~current_state
-            log.info("Current State: {}".format(current_state))
-            GPIO.output(LED_PIN, GPIO.LOW if not current_state else GPIO.HIGH)
-            c_sock.close()
 
+            if data == SWITCH_CMD:
+                current_state = ~current_state
+                log.info("Current State: {}".format(current_state))
+                GPIO.output(LED_PIN, GPIO.LOW if not current_state else GPIO.HIGH)
+                response = GOOD_RESPONSE
+            elif data == CSTATE_CMD:
+                log.info("Received a check request")
+                response = GOOD_RESPONSE
+            else:
+                log.info("Received unknown request")
+                response = BAD_RESPONSE
+
+            c_sock.send(response)
+            c_sock.close()
         except Exception as e:
             log.error(traceback.format_exc())
 
